@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chaldean Numerology Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Marcellus&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one centred column. Input panel on top, three number cards, a tablet-style letter strip, then a tabbed reading and the letter table. */
+:root {
+  --bg: #E9EDF5;
+  --surface: #F6F8FC;
+  --ink: #101B33;
+  --muted: #46526F;
+  --line: #C5CEE0;
+  --accent: #7A5200;
+  --brass: #C99A2E;
+  --tile: #14213D;
+  --tile-ink: #F0C766;
+  --vowel: #6F9BFF;
+  --focus: #1F4FD8;
+  --font-display: 'Marcellus', 'Trajan Pro', Georgia, serif;
+  --font-body: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0A1120;
+    --surface: #111A2E;
+    --ink: #E7ECF6;
+    --muted: #9BA8C5;
+    --line: #233050;
+    --accent: #EDC166;
+    --brass: #EDC166;
+    --tile: #1B2A4C;
+    --tile-ink: #F3CC74;
+    --vowel: #8DB2FF;
+    --focus: #8DB2FF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0A1120;
+  --surface: #111A2E;
+  --ink: #E7ECF6;
+  --muted: #9BA8C5;
+  --line: #233050;
+  --accent: #EDC166;
+  --brass: #EDC166;
+  --tile: #1B2A4C;
+  --tile-ink: #F3CC74;
+  --vowel: #8DB2FF;
+  --focus: #8DB2FF;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+}
+.page { max-width: 940px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; margin: 0; text-wrap: balance; letter-spacing: 0.01em; }
+p { margin: 0; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.masthead { display: flex; flex-direction: column; gap: 10px; padding-top: 8px; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); }
+h1 { font-size: clamp(2rem, 6vw, 3.1rem); line-height: 1.08; }
+.lede { max-width: 62ch; color: var(--muted); }
+.rule { height: 2px; background: linear-gradient(90deg, var(--brass) 0 64px, var(--line) 64px 100%); border: 0; margin: 4px 0 0; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+.fields { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px 24px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field > label, .field > .lbl { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+input, select {
+  font: inherit; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; width: 100%; min-width: 0;
+}
+input#name { font-family: var(--font-display); font-size: 1.35rem; padding: 10px 14px; }
+.dob { display: grid; grid-template-columns: 0.7fr 1.5fr 1fr; gap: 8px; }
+.hint { font-size: 0.85rem; color: var(--muted); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+button {
+  font: inherit; font-weight: 600; cursor: pointer; color: var(--ink);
+  background: transparent; border: 1px solid var(--line); border-radius: 4px; padding: 8px 14px;
+}
+button:hover { border-color: var(--brass); }
+button.primary { background: var(--tile); color: var(--tile-ink); border-color: var(--tile); }
+.status { font-size: 0.85rem; color: var(--muted); }
+.fallback { width: 100%; font-family: var(--font-mono); font-size: 0.85rem; min-height: 6.5rem; }
+
+.numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.num-card { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--brass); border-radius: 4px; padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.num-card .label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.num-value { font-family: var(--font-display); font-size: 3.4rem; line-height: 1.1; display: flex; align-items: baseline; gap: 2px; font-variant-numeric: tabular-nums; }
+.num-value .root { color: var(--accent); }
+.num-value .slash { color: var(--line); font-size: 2.4rem; }
+.num-value.empty { font-size: 1.15rem; color: var(--muted); font-family: var(--font-body); line-height: 1.4; padding-block: 12px; }
+.num-sub { font-size: 0.92rem; color: var(--muted); }
+.num-sub strong { color: var(--ink); font-weight: 600; }
+
+section { display: flex; flex-direction: column; gap: 14px; }
+h2 { font-size: 1.5rem; }
+.words { display: flex; flex-direction: column; gap: 18px; }
+.word-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-bottom: 8px; }
+.word-name { font-family: var(--font-display); font-size: 1.15rem; letter-spacing: 0.08em; }
+.word-sum { font-family: var(--font-mono); font-size: 0.88rem; color: var(--accent); }
+.tiles { display: flex; flex-wrap: wrap; gap: 6px; }
+.tile {
+  width: 46px; background: var(--tile); color: var(--tile-ink);
+  border-radius: 3px; padding: 8px 0 7px; text-align: center; border-bottom: 3px solid transparent;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.tile.vowel { border-bottom-color: var(--vowel); }
+.tile .ch { font-family: var(--font-display); font-size: 1.45rem; line-height: 1.1; }
+.tile .val { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 500; opacity: 0.92; }
+.legend { font-size: 0.85rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; }
+.legend i { display: inline-block; width: 18px; height: 3px; background: var(--vowel); vertical-align: middle; margin-right: 6px; }
+
+.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.split-item { border: 1px solid var(--line); border-radius: 4px; padding: 12px 16px; background: var(--surface); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.split-item .k { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.split-item .s { font-size: 0.85rem; color: var(--muted); }
+.split-item .v { font-family: var(--font-display); font-size: 1.8rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.split-item .v b { color: var(--accent); font-weight: 400; }
+
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); }
+.tab { border: 0; border-bottom: 3px solid transparent; border-radius: 0; padding: 8px 14px; color: var(--muted); background: transparent; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--brass); }
+.reading { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+.read-block { display: flex; flex-direction: column; gap: 6px; max-width: 68ch; }
+.read-block h3 { font-size: 1.25rem; }
+.read-block .tag { font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); letter-spacing: 0.04em; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 0.82rem; border: 1px solid var(--line); border-radius: 99px; padding: 2px 11px; color: var(--muted); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 24px; }
+.two h4 { margin: 0 0 2px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 600; }
+
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 420px; background: var(--surface); }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); }
+th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 600; }
+td.n { font-family: var(--font-display); font-size: 1.3rem; width: 64px; color: var(--accent); }
+td.l { font-family: var(--font-mono); letter-spacing: 0.18em; }
+td.p { color: var(--muted); }
+.notes { padding-left: 1.1rem; margin: 0; display: flex; flex-direction: column; gap: 6px; color: var(--muted); max-width: 72ch; }
+.notes strong { color: var(--ink); font-weight: 600; }
+
+@media (max-width: 640px) {
+  .fields { grid-template-columns: minmax(0, 1fr); }
+  .panel { padding: 16px; }
+  .num-value { font-size: 3rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  button { transition: border-color 0.15s ease; }
+}
+
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Letter values 1 to 8 · compound numbers 10 to 52</div>
+    <h1>Chaldean Numerology Calculator</h1>
+    <p class="lede">Enter a name to get its Chaldean name number, with every letter valued the Chaldean way. Add a date of birth to see the birth number and destiny number alongside it.</p>
+    <hr class="rule">
+  </header>
+
+  <div class="panel">
+    <div class="fields">
+      <div class="field">
+        <label for="name">Full name</label>
+        <input id="name" type="text" autocomplete="off" spellcheck="false" value="Aarav Mehta" aria-describedby="name-hint">
+        <span class="hint" id="name-hint">Use English letters. Spaces split the name into words.</span>
+      </div>
+      <div class="field">
+        <span class="lbl" id="dob-label">Date of birth (optional)</span>
+        <div class="dob" role="group" aria-labelledby="dob-label">
+          <input id="dob-day" type="number" inputmode="numeric" min="1" max="31" placeholder="Day" aria-label="Day" value="14">
+          <select id="dob-month" aria-label="Month">
+            <option value="">Month</option>
+            <option value="1">January</option><option value="2">February</option><option value="3" selected>March</option>
+            <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+            <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+          </select>
+          <input id="dob-year" type="number" inputmode="numeric" min="1900" max="2100" placeholder="Year" aria-label="Year" value="1994">
+        </div>
+        <span class="hint" id="dob-hint">Results update as you type.</span>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="button" class="primary" id="copy">Copy summary</button>
+      <button type="button" id="clear">Clear all</button>
+      <span class="status" id="status" role="status">Example loaded. Replace it with any name.</span>
+    </div>
+    <textarea id="fallback" class="fallback" readonly hidden aria-label="Summary text to copy"></textarea>
+  </div>
+
+  <div class="numbers" id="numbers"></div>
+
+  <section aria-labelledby="h-letters">
+    <h2 id="h-letters">Letter by letter</h2>
+    <div class="words" id="words"></div>
+    <div class="legend"><span><i></i>Vowel (A E I O U)</span><span>Y is counted as a consonant</span></div>
+  </section>
+
+  <section aria-labelledby="h-split">
+    <h2 id="h-split">Vowels and consonants</h2>
+    <div class="split" id="split"></div>
+  </section>
+
+  <section aria-labelledby="h-read">
+    <h2 id="h-read">What the numbers mean</h2>
+    <div class="tabs" role="tablist" aria-label="Choose a number">
+      <button class="tab" role="tab" id="tab-name" data-tab="name" aria-selected="true" aria-controls="reading">Name number</button>
+      <button class="tab" role="tab" id="tab-birth" data-tab="birth" aria-selected="false" aria-controls="reading">Birth number</button>
+      <button class="tab" role="tab" id="tab-destiny" data-tab="destiny" aria-selected="false" aria-controls="reading">Destiny number</button>
+    </div>
+    <div class="reading" id="reading" role="tabpanel" aria-labelledby="tab-name"></div>
+  </section>
+
+  <section aria-labelledby="h-table">
+    <h2 id="h-table">The Chaldean letter table</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Value</th><th>Letters</th><th>Ruled by</th></tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-how">
+    <h2 id="h-how">How the calculation works</h2>
+    <ul class="notes">
+      <li><strong>Name number.</strong> Add the value of every letter. A total above 9 is the compound number, and repeated digit addition gives the root number from 1 to 9.</li>
+      <li><strong>Compounds over 52.</strong> Traditional lists stop at 52, so a larger total has its digits added until it is 52 or less.</li>
+      <li><strong>Birth number.</strong> The day of the month. A day from 10 to 31 is the compound number, reduced to a root.</li>
+      <li><strong>Destiny number.</strong> Every digit of the full date of birth added together, then reduced.</li>
+      <li><strong>No 9 in the table.</strong> The Chaldean system keeps 9 sacred and assigns it to no letter. 9 appears only as a total.</li>
+      <li><strong>No master numbers.</strong> 11 and 22 are read as compound numbers with their own meanings and reduce to 2 and 4.</li>
+      <li><strong>Reading sources differ.</strong> Compound readings follow the classic tradition for 10 to 32. Sources disagree on 33 to 52, so those show the root reading only.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function () {
+  var MAP = {A:1,I:1,J:1,Q:1,Y:1,B:2,K:2,R:2,C:3,G:3,L:3,S:3,D:4,M:4,T:4,E:5,H:5,N:5,X:5,U:6,V:6,W:6,O:7,Z:7,F:8,P:8};
+  var VOWELS = 'AEIOU';
+  var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  var ROOTS = {
+    1: { planet: 'Sun', title: 'The Originator', keys: ['Leadership','Independence','Ambition','Originality'],
+      good: 'Starts things, decides quickly and leads from the front. Strong will and a clear sense of direction.',
+      watch: 'Ego, stubbornness and a habit of going it alone. Listening is the growth edge.' },
+    2: { planet: 'Moon', title: 'The Harmoniser', keys: ['Intuition','Cooperation','Sensitivity','Diplomacy'],
+      good: 'Reads people well, works gracefully in pairs and teams, and keeps the peace.',
+      watch: 'Mood swings, indecision and absorbing other people\'s stress.' },
+    3: { planet: 'Jupiter', title: 'The Teacher', keys: ['Wisdom','Optimism','Expression','Guidance'],
+      good: 'Generous, expansive and good at explaining, advising and inspiring others.',
+      watch: 'Spreading energy too thin and lecturing when listening would work better.' },
+    4: { planet: 'Rahu (Uranus in Western texts)', title: 'The Builder', keys: ['Unconventional','Practical','Resilient','Independent'],
+      good: 'Builds lasting structures and thinks outside the usual path. Handles setbacks with stubborn resilience.',
+      watch: 'Sudden disruptions, restlessness and clashes with authority or convention.' },
+    5: { planet: 'Mercury', title: 'The Communicator', keys: ['Quick mind','Adaptable','Commercial','Curious'],
+      good: 'Fast thinker and natural talker with a feel for trade, travel and new ideas.',
+      watch: 'Nervous energy, inconsistency and starting more than gets finished.' },
+    6: { planet: 'Venus', title: 'The Nurturer', keys: ['Harmony','Beauty','Loyalty','Comfort'],
+      good: 'Warm, artistic and devoted to family and home. Creates pleasant surroundings.',
+      watch: 'Indulgence, jealousy and putting others\' needs far ahead of your own.' },
+    7: { planet: 'Ketu (Neptune in Western texts)', title: 'The Seeker', keys: ['Analysis','Spirituality','Research','Solitude'],
+      good: 'Deep thinker drawn to research, philosophy and inner work. Trusts insight over noise.',
+      watch: 'Withdrawing from people and over-analysing instead of acting.' },
+    8: { planet: 'Saturn', title: 'The Taskmaster', keys: ['Discipline','Endurance','Responsibility','Karma'],
+      good: 'Patient, methodical and strong in management. Rewards come slowly and last.',
+      watch: 'Delays, heavy workloads and a stern manner that hides real warmth.' },
+    9: { planet: 'Mars', title: 'The Warrior', keys: ['Courage','Energy','Generosity','Drive'],
+      good: 'Brave, energetic and willing to fight for others. Finishes what it begins.',
+      watch: 'Temper, impatience and rushing into conflict.' }
+  };
+
+  // Compound readings for 10 to 32, in the classic tradition (Cheiro and later Chaldean writers).
+  var COMPOUNDS = {
+    10: ['The Wheel of Fortune','Fortunes rise and fall like a turning wheel. Honour and self-reliance come with it, and so does the need to keep faith in yourself through changes.'],
+    11: ['The Clenched Hand','Hidden dangers, secret opposition and tests of courage. Awareness and caution turn the warning into strength.'],
+    12: ['The Sacrifice','Anxiety and a pull to give up your own plans for other people\'s. Needs firm boundaries and clear personal goals.'],
+    13: ['Change and Rebirth','Upheaval that clears the ground for something new. Often read as a number of power, which rewards hard work and a willingness to start over.'],
+    14: ['Movement','Travel, change and dealings with many people. Quick thinking helps, and speculation and hasty moves carry risk.'],
+    15: ['The Magician','Charm, magnetism and a gift for speech or music. Attracts help and money, and needs to be used with integrity.'],
+    16: ['The Shattered Citadel','A warning that plans built on pride can fall suddenly. Humility, foresight and honest self-review avoid the fall.'],
+    17: ['The Star of the Magi','Peace, hope and spiritual strength. Brings lasting reputation and the ability to rise above loss.'],
+    18: ['Spirit against Matter','Quarrels, deceit and a tug between material goals and ideals. Watch for betrayal and keep disputes out of court where possible.'],
+    19: ['The Prince of Heaven','Happiness, honour and success under the Sun. Favours leadership and recognition.'],
+    20: ['The Awakening','A call to a new purpose. Marks decisions, fresh plans and a reassessment of the path ahead.'],
+    21: ['The Crown of the Magi','Advancement, honours and victory after a long struggle. One of the most fortunate compound numbers.'],
+    22: ['The Good Man','Gentle and trusting to a fault. Illusions and leaning on others\' judgement are the risk, so check facts and keep your own counsel.'],
+    23: ['The Royal Star of the Lion','Success, protection and help from people in higher positions. Creative and favoured.'],
+    24: ['Love and Gain','Favours partnership, affection and gain through others, including helpful people in authority.'],
+    25: ['Strength through Experience','Analytical and observant. Early setbacks teach lessons that lead to later success.'],
+    26: ['Partnerships','A caution about joint ventures and money tied up with others. Ambition is large, so choose partners carefully.'],
+    27: ['The Sceptre','Authority earned through effort. Command, productivity and reward for steady work.'],
+    28: ['The Contradictions','Rise and fall, with the risk of loss through other people. Holding to your own course pays off.'],
+    29: ['Uncertainty','Trials, shifting loyalties and unreliable partners. Steady plans and careful trust carry you through.'],
+    30: ['The Thinker','Mental strength and detachment. Leads through ideas, works independently and may prefer solitude.'],
+    31: ['The Recluse','Self-contained and practical. Independent, and at risk of isolation if it keeps everyone at a distance.'],
+    32: ['Communication','Behaves like a 5. Works well with the public and with words, and does best staying independent of others\' control.']
+  };
+
+  var RULERS = {1:'Sun',2:'Moon',3:'Jupiter',4:'Rahu',5:'Mercury',6:'Venus',7:'Ketu',8:'Saturn',9:'Mars'};
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function digitSum(n) { var s = 0; String(n).split('').forEach(function (d) { s += +d; }); return s; }
+  function reduce(n) { while (n > 9) n = digitSum(n); return n; }
+
+  // Turns a letter total into { total, compound, root }.
+  function describe(total) {
+    if (!total) return null;
+    var c = total;
+    while (c > 52) c = digitSum(c);
+    return { total: total, compound: c > 9 ? c : null, root: reduce(c) };
+  }
+  function fmt(d) { return d.compound ? d.compound + '/' + d.root : String(d.root); }
+
+  function parseName(raw) {
+    var clean = raw.normalize('NFD').replace(/[̀-ͯ]/g, '');
+    var hasOther = /[^\u0000-\u007F]/.test(clean);
+    var words = clean.toUpperCase().split(/[^A-Z]+/).filter(Boolean);
+    return { words: words, hasOther: hasOther };
+  }
+
+  function scoreWord(w) {
+    var all = 0, v = 0, c = 0;
+    w.split('').forEach(function (ch) {
+      var n = MAP[ch];
+      all += n;
+      if (VOWELS.indexOf(ch) > -1) v += n; else c += n;
+    });
+    return { all: all, vowels: v, cons: c };
+  }
+
+  function readDob() {
+    var d = parseInt($('dob-day').value, 10);
+    var m = parseInt($('dob-month').value, 10);
+    var y = parseInt($('dob-year').value, 10);
+    if (!d && !m && !y) return { state: 'empty' };
+    if (!d || !m || !y) return { state: 'partial' };
+    if (y < 1900 || y > 2100) return { state: 'bad', msg: 'Enter a year from 1900 to 2100.' };
+    var dim = new Date(y, m, 0).getDate();
+    if (d < 1 || d > dim) return { state: 'bad', msg: MONTHS[m - 1] + ' ' + y + ' has ' + dim + ' days.' };
+    var birth = describe(d);
+    var destiny = describe(digitSum(d) + digitSum(m) + digitSum(y));
+    return { state: 'ok', d: d, m: m, y: y, birth: birth, destiny: destiny };
+  }
+
+  var active = 'name';
+  var last = null;
+
+  function numCard(label, d, sub) {
+    var card = el('div', 'num-card');
+    card.appendChild(el('div', 'label', label));
+    if (!d) {
+      card.appendChild(el('div', 'num-value empty', sub));
+      return card;
+    }
+    var v = el('div', 'num-value');
+    if (d.compound) {
+      v.appendChild(el('span', 'cmp', String(d.compound)));
+      v.appendChild(el('span', 'slash', '/'));
+    }
+    v.appendChild(el('span', 'root', String(d.root)));
+    card.appendChild(v);
+    var s = el('div', 'num-sub');
+    var strong = el('strong', null, RULERS[d.root]);
+    s.appendChild(strong);
+    s.appendChild(document.createTextNode(' · ' + ROOTS[d.root].title));
+    card.appendChild(s);
+    if (sub) card.appendChild(el('div', 'num-sub', sub));
+    return card;
+  }
+
+  function render() {
+    var parsed = parseName($('name').value);
+    var words = parsed.words;
+    var dob = readDob();
+
+    var wordData = words.map(function (w) { return { w: w, s: scoreWord(w) }; });
+    var totalAll = 0, totalV = 0, totalC = 0;
+    wordData.forEach(function (x) { totalAll += x.s.all; totalV += x.s.vowels; totalC += x.s.cons; });
+    var nameD = describe(totalAll);
+    var vowD = describe(totalV);
+    var consD = describe(totalC);
+
+    var birthD = dob.state === 'ok' ? dob.birth : null;
+    var destD = dob.state === 'ok' ? dob.destiny : null;
+    last = { words: words, nameD: nameD, vowD: vowD, consD: consD, birthD: birthD, destD: destD, dob: dob };
+
+    // Hints
+    $('name-hint').textContent = parsed.hasOther
+      ? 'Letters outside A to Z are skipped. Type the name in English letters for a full result.'
+      : 'Use English letters. Spaces split the name into words.';
+    $('dob-hint').textContent = dob.state === 'bad' ? dob.msg
+      : dob.state === 'partial' ? 'Fill day, month and year to see the birth and destiny numbers.'
+      : 'Results update as you type.';
+
+    // Number cards
+    var box = $('numbers');
+    box.textContent = '';
+    var nameSub = nameD ? (totalAll > 52 ? 'Letter total ' + totalAll + ', reduced to ' + fmt(nameD).split('/')[0] : 'Letter total ' + totalAll) : '';
+    box.appendChild(numCard('Name number', nameD, 'Type a name to see its number.'));
+    if (nameD && nameSub) box.lastChild.appendChild(el('div', 'num-sub', nameSub));
+    box.appendChild(numCard('Birth number', birthD, dob.state === 'bad' ? dob.msg : 'Add a date of birth.'));
+    if (birthD) box.lastChild.appendChild(el('div', 'num-sub', 'Born on day ' + dob.d));
+    box.appendChild(numCard('Destiny number', destD, dob.state === 'bad' ? dob.msg : 'Add a date of birth.'));
+    if (destD) box.lastChild.appendChild(el('div', 'num-sub', 'From ' + dob.d + ' ' + MONTHS[dob.m - 1] + ' ' + dob.y));
+
+    // Letters
+    var wbox = $('words');
+    wbox.textContent = '';
+    if (!wordData.length) {
+      wbox.appendChild(el('p', 'hint', 'The letter values for each word appear here.'));
+    }
+    wordData.forEach(function (x) {
+      var wd = describe(x.s.all);
+      var wrap = el('div', 'word');
+      var head = el('div', 'word-head');
+      head.appendChild(el('span', 'word-name', x.w));
+      head.appendChild(el('span', 'word-sum', 'Total ' + x.s.all + (wd.compound ? ' → ' + wd.compound + '/' + wd.root : '')));
+      wrap.appendChild(head);
+      var tiles = el('div', 'tiles');
+      x.w.split('').forEach(function (ch) {
+        var t = el('div', 'tile' + (VOWELS.indexOf(ch) > -1 ? ' vowel' : ''));
+        t.appendChild(el('span', 'ch', ch));
+        t.appendChild(el('span', 'val', String(MAP[ch])));
+        tiles.appendChild(t);
+      });
+      wrap.appendChild(tiles);
+      wbox.appendChild(wrap);
+    });
+
+    // Vowels and consonants
+    var sb = $('split');
+    sb.textContent = '';
+    [['Vowel number', 'Inner motive, the soul urge', vowD, totalV], ['Consonant number', 'Outer manner, the personality', consD, totalC]].forEach(function (r) {
+      var item = el('div', 'split-item');
+      var left = el('div');
+      left.appendChild(el('div', 'k', r[0]));
+      left.appendChild(el('div', 's', r[1] + (r[2] ? ' · total ' + r[3] : '')));
+      var v = el('div', 'v');
+      if (r[2]) {
+        if (r[2].compound) { v.appendChild(document.createTextNode(r[2].compound + '/')); }
+        var b = el('b', null, String(r[2].root));
+        v.appendChild(b);
+      } else { v.textContent = '·'; }
+      item.appendChild(left);
+      item.appendChild(v);
+      sb.appendChild(item);
+    });
+
+    renderReading();
+  }
+
+  function block(title, tag, text) {
+    var b = el('div', 'read-block');
+    if (tag) b.appendChild(el('span', 'tag', tag));
+    b.appendChild(el('h3', null, title));
+    if (text) b.appendChild(el('p', null, text));
+    return b;
+  }
+
+  function renderReading() {
+    var panel = $('reading');
+    panel.textContent = '';
+    panel.setAttribute('aria-labelledby', 'tab-' + active);
+    var d = active === 'name' ? last.nameD : active === 'birth' ? last.birthD : last.destD;
+    if (!d) {
+      panel.appendChild(el('p', 'hint', active === 'name' ? 'Enter a name to see its reading.' : 'Enter a full date of birth to see this reading.'));
+      return;
+    }
+    var heading = active === 'name' ? 'Name number' : active === 'birth' ? 'Birth number' : 'Destiny number';
+    if (d.compound) {
+      var c = COMPOUNDS[d.compound];
+      if (c) {
+        panel.appendChild(block(c[0], 'Compound ' + d.compound + ' · ' + heading, c[1]));
+      } else {
+        panel.appendChild(block('Compound ' + d.compound, heading, 'Sources disagree on the compound readings above 32, so this page shows the root reading below.'));
+      }
+    }
+    var r = ROOTS[d.root];
+    var rb = block(r.title, 'Root ' + d.root + ' · ' + r.planet + (d.compound ? '' : ' · ' + heading));
+    var chips = el('div', 'chips');
+    r.keys.forEach(function (k) { chips.appendChild(el('span', 'chip', k)); });
+    rb.appendChild(chips);
+    panel.appendChild(rb);
+    var two = el('div', 'two');
+    var g = el('div'); g.appendChild(el('h4', null, 'Strengths')); g.appendChild(el('p', null, r.good));
+    var w = el('div'); w.appendChild(el('h4', null, 'Watch for')); w.appendChild(el('p', null, r.watch));
+    two.appendChild(g); two.appendChild(w);
+    panel.appendChild(two);
+  }
+
+  function buildTable() {
+    var groups = {};
+    Object.keys(MAP).forEach(function (ch) { (groups[MAP[ch]] = groups[MAP[ch]] || []).push(ch); });
+    var body = $('table-body');
+    for (var n = 1; n <= 9; n++) {
+      var tr = el('tr');
+      tr.appendChild(el('td', 'n', String(n)));
+      tr.appendChild(el('td', 'l', groups[n] ? groups[n].join(' ') : 'No letter'));
+      tr.appendChild(el('td', 'p', RULERS[n]));
+      body.appendChild(tr);
+    }
+  }
+
+  function summary() {
+    var l = last;
+    var lines = ['Chaldean numerology'];
+    lines.push('Name: ' + (l.words.join(' ') || '-') + (l.nameD ? ' → ' + fmt(l.nameD) + ' (' + RULERS[l.nameD.root] + ')' : ''));
+    if (l.vowD) lines.push('Vowel number: ' + fmt(l.vowD));
+    if (l.consD) lines.push('Consonant number: ' + fmt(l.consD));
+    if (l.birthD) lines.push('Birth number: ' + fmt(l.birthD) + ' (' + RULERS[l.birthD.root] + ')');
+    if (l.destD) lines.push('Destiny number: ' + fmt(l.destD) + ' (' + RULERS[l.destD.root] + ')');
+    return lines.join('\n');
+  }
+
+  function setStatus(t) { $('status').textContent = t; }
+
+  $('copy').addEventListener('click', function () {
+    var text = summary();
+    var fb = $('fallback');
+    function manual() {
+      fb.hidden = false; fb.value = text; fb.focus(); fb.select();
+      setStatus('Copy is blocked here. The text is selected, press Ctrl+C or Cmd+C.');
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { fb.hidden = true; setStatus('Summary copied.'); }, manual);
+      } else { manual(); }
+    } catch (e) { manual(); }
+  });
+
+  $('clear').addEventListener('click', function () {
+    $('name').value = ''; $('dob-day').value = ''; $('dob-month').value = ''; $('dob-year').value = '';
+    $('fallback').hidden = true;
+    setStatus('Cleared.');
+    render();
+    $('name').focus();
+  });
+
+  ['name', 'dob-day', 'dob-month', 'dob-year'].forEach(function (id) {
+    $(id).addEventListener('input', function () { setStatus(''); render(); });
+    $(id).addEventListener('change', function () { render(); });
+  });
+
+  document.querySelectorAll('.tab').forEach(function (t) {
+    t.addEventListener('click', function () {
+      active = t.getAttribute('data-tab');
+      document.querySelectorAll('.tab').forEach(function (o) { o.setAttribute('aria-selected', o === t ? 'true' : 'false'); });
+      renderReading();
+    });
+  });
+
+  buildTable();
+  render();
+})();
+</script>
+
+</body>
+</html>
